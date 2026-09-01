@@ -6,7 +6,7 @@ lua54 'yes'
 name 'feather-toolkit'
 description 'Owned, reusable client utility contracts for Feather Framework'
 author 'Feather Framework'
-version '0.1.0'
+version '0.2.0'
 
 shared_scripts {
     'config.lua',
