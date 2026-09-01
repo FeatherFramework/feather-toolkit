@@ -1,8 +1,25 @@
-<!doctype html><html><body><script>
-window.addEventListener('message', async ({data}) => {
-  if (data && data.type === 'copy' && typeof data.text === 'string') {
-    try { await navigator.clipboard.writeText(data.text); }
-    catch (_) { const el=document.createElement('textarea');el.value=data.text;document.body.appendChild(el);el.select();document.execCommand('copy');el.remove(); }
-  }
-});
-</script></body></html>
+<!doctype html>
+<html>
+	<body>
+		<script>
+			window.addEventListener('message', async ({ data }) => {
+				if (
+					data &&
+					data.type === 'copy' &&
+					typeof data.text === 'string'
+				) {
+					try {
+						await navigator.clipboard.writeText(data.text)
+					} catch (_) {
+						const el = document.createElement('textarea')
+						el.value = data.text
+						document.body.appendChild(el)
+						el.select()
+						document.execCommand('copy')
+						el.remove()
+					}
+				}
+			})
+		</script>
+	</body>
+</html>
