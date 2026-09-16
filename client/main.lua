@@ -3,9 +3,10 @@ local function Owner()
     local owner = GetInvokingResource(); if type(owner) ~= 'string' or owner == '' then return nil end; return owner
 end
 local function Capabilities() return ToolkitResults.Ok({ resource = resourceName, contract = 1, version =
-    GetResourceMetadata(resourceName, 'version', 0) or '0.0.0', features = { models = 1, entities = 1, blips = 1, keys = 1, controls = 1, prompts = 1, render = 1, clipboard = 1 } }) end
+    GetResourceMetadata(resourceName, 'version', 0) or '0.0.0', features = { models = 1, animations = 1, entities = 1, blips = 1, keys = 1, controls = 1, prompts = 1, render = 1, clipboard = 1 } }) end
 exports('GetCapabilities', Capabilities)
 exports('LoadModel', ToolkitModels.Load)
+exports('LoadAnimDict', ToolkitAnimations.LoadDictionary)
 exports('CreateObject',
     function(spec)
         local o = Owner(); return o and ToolkitEntities.CreateObject(o, spec) or
@@ -64,10 +65,13 @@ exports('RemovePrompt',
     end)
 exports('DrawText2D', ToolkitRender.Text2D); exports('DrawText3D', ToolkitRender.Text3D); exports('CopyToClipboard',
     ToolkitClipboard.Copy)
-AddEventHandler('onClientResourceStop',
+AddEventHandler('onResourceStop',
     function(owner)
-        if owner == resourceName then return end; ToolkitEntities.Cleanup(owner); ToolkitBlips.Cleanup(owner); ToolkitKeys
-            .Cleanup(owner); ToolkitPrompts.Cleanup(owner)
+        if owner == resourceName then
+            ToolkitEntities.CleanupAll(); ToolkitBlips.CleanupAll(); ToolkitKeys.CleanupAll(); ToolkitPrompts.CleanupAll()
+            return
+        end
+        ToolkitEntities.Cleanup(owner); ToolkitBlips.Cleanup(owner); ToolkitKeys.Cleanup(owner); ToolkitPrompts.Cleanup(owner)
     end)
 RegisterCommand('ToolkitContractSmokeTest', function()
     local caps = Capabilities(); local invalid = ToolkitModels.Load(nil)
@@ -75,7 +79,8 @@ RegisterCommand('ToolkitContractSmokeTest', function()
     local owned = ToolkitKeys.Register('smoke-owner', 0x760A9C6F, function() end)
     local cross = owned.ok and ToolkitKeys.Remove('other-owner', owned.value.id) or nil
     local cleaned = ToolkitKeys.Cleanup('smoke-owner')
-    local tests = { { 'capabilities', caps.ok and caps.value.contract == 1 }, { 'feature surface', caps.ok and caps.value.features.prompts == 1 and caps.value.features.clipboard == 1 and caps.value.features.controls == 1 }, { 'named control resolved', namedControl.ok and type(namedControl.value) == 'number' }, { 'invalid model rejected', not invalid.ok and invalid.code == 'invalid_input' }, { 'cross owner denied', cross and not cross.ok and cross.code == 'forbidden' }, { 'owner cleanup', cleaned == 1 } }
+    local invalidDictionary = ToolkitAnimations.LoadDictionary('')
+    local tests = { { 'capabilities', caps.ok and caps.value.contract == 1 }, { 'feature surface', caps.ok and caps.value.features.prompts == 1 and caps.value.features.clipboard == 1 and caps.value.features.controls == 1 and caps.value.features.animations == 1 }, { 'named control resolved', namedControl.ok and type(namedControl.value) == 'number' }, { 'invalid model rejected', not invalid.ok and invalid.code == 'invalid_input' }, { 'invalid anim rejected', not invalidDictionary.ok and invalidDictionary.code == 'invalid_input' }, { 'cross owner denied', cross and not cross.ok and cross.code == 'forbidden' }, { 'owner cleanup', cleaned == 1 } }
     local passed = 0; for _, t in ipairs(tests) do
         if t[2] then passed = passed + 1 end; print(('[ToolkitContractSmokeTest] %-24s %s'):format(t[1],
             t[2] and 'PASS' or 'FAIL'))
