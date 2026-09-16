@@ -41,6 +41,18 @@ function ToolkitEntities.CreateObject(owner, spec)
         PlaceObjectOnGroundProperly(entity, true)
     end
 
+    local groundOffset = tonumber(spec.groundOffset) or 0.0
+    if groundOffset < -5.0 or groundOffset > 5.0 then
+        DeleteObject(entity)
+        SetModelAsNoLongerNeeded(modelHash)
+        return ToolkitResults.Err('invalid_input', 'Object ground offset must be between -5 and 5 metres.')
+    end
+    if groundOffset ~= 0.0 then
+        local grounded = GetEntityCoords(entity)
+        SetEntityCoordsNoOffset(entity, grounded.x, grounded.y, grounded.z + groundOffset,
+            false, false, false)
+    end
+
     FreezeEntityPosition(entity, spec.frozen ~= false)
     SetModelAsNoLongerNeeded(modelHash)
 
@@ -95,7 +107,7 @@ function ToolkitEntities.Remove(owner, id)
     end
 
     if DoesEntityExist(record.entity) then
-        DeleteEntity(record.entity)
+        if record.kind == 'object' then DeleteObject(record.entity) else DeleteEntity(record.entity) end
     end
 
     ToolkitEntities.records[id] = nil
@@ -108,11 +120,23 @@ function ToolkitEntities.Cleanup(owner)
     for id, record in pairs(ToolkitEntities.records) do
         if record.owner == owner then
             if DoesEntityExist(record.entity) then
-                DeleteEntity(record.entity)
+                if record.kind == 'object' then DeleteObject(record.entity) else DeleteEntity(record.entity) end
             end
             ToolkitEntities.records[id] = nil
             count = count + 1
         end
+    end
+    return count
+end
+
+function ToolkitEntities.CleanupAll()
+    local count = 0
+    for id, record in pairs(ToolkitEntities.records) do
+        if DoesEntityExist(record.entity) then
+            if record.kind == 'object' then DeleteObject(record.entity) else DeleteEntity(record.entity) end
+        end
+        ToolkitEntities.records[id] = nil
+        count = count + 1
     end
     return count
 end

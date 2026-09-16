@@ -57,6 +57,15 @@ function ToolkitKeys.Cleanup(owner)
     return n
 end
 
+function ToolkitKeys.CleanupAll()
+    local count = 0
+    for id in pairs(ToolkitKeys.listeners) do
+        ToolkitKeys.listeners[id] = nil
+        count = count + 1
+    end
+    return count
+end
+
 CreateThread(function()
     while true do
         Wait(0)

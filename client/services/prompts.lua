@@ -5,28 +5,28 @@ function ToolkitPrompts.Create(owner, spec)
         return ToolkitResults.Err('invalid_input', 'Prompt control is required.')
     end
 
-    local handle = PromptRegisterBegin()
-    PromptSetControlAction(handle, tonumber(spec.control))
-    PromptSetText(handle, CreateVarString(10, 'LITERAL_STRING', tostring(spec.label or 'Interact')))
-    PromptSetEnabled(handle, spec.enabled ~= false)
-    PromptSetVisible(handle, spec.visible ~= false)
+    local handle = UiPromptRegisterBegin()
+    UiPromptSetControlAction(handle, tonumber(spec.control))
+    UiPromptSetText(handle, CreateVarString(10, 'LITERAL_STRING', tostring(spec.label or 'Interact')))
+    UiPromptSetEnabled(handle, spec.enabled ~= false and 1 or 0)
+    UiPromptSetVisible(handle, spec.visible ~= false and 1 or 0)
 
     if spec.groupId then
-        PromptSetGroup(handle, tonumber(spec.groupId), 0)
+        UiPromptSetGroup(handle, tonumber(spec.groupId), tonumber(spec.tabIndex) or 0)
     end
 
     if spec.mode == 'hold' then
-        Citizen.InvokeNative(0x74C7D7B72ED0D3CF, handle, spec.holdMode or 'MEDIUM_TIMED_EVENT')
+        UiPromptSetStandardizedHoldMode(handle, spec.holdMode or 'MEDIUM_TIMED_EVENT')
     else
-        PromptSetStandardMode(handle, true)
+        UiPromptSetStandardMode(handle, 1)
     end
 
-    Citizen.InvokeNative(0xC5F428EE08FA7F2C, handle, spec.pulsing ~= false)
-    PromptRegisterEnd(handle)
+    UiPromptSetUrgentPulsingEnabled(handle, spec.pulsing ~= false)
+    UiPromptRegisterEnd(handle)
     ToolkitPrompts.nextId = ToolkitPrompts.nextId + 1
 
     local id = ('prompt:%d'):format(ToolkitPrompts.nextId)
-    ToolkitPrompts.records[id] = { owner = owner, handle = handle, mode = spec.mode or 'click' }
+    ToolkitPrompts.records[id] = { owner = owner, handle = handle, mode = spec.mode or 'click', completedAt = 0 }
 
     return ToolkitResults.Ok({ id = id, handle = handle })
 end
@@ -41,10 +41,13 @@ function ToolkitPrompts.Completed(owner, id)
         return ToolkitResults.Err('forbidden', 'Prompt belongs to another resource.')
     end
 
-    local completed = v.mode == 'hold' and Citizen.InvokeNative(0xE0F65F0640EF0617, v.handle)
-        or Citizen.InvokeNative(0xC92AC953F0A982AE, v.handle)
+    local now = GetGameTimer()
+    if now - v.completedAt < 500 then return ToolkitResults.Ok({ completed = false }) end
+    local completed = v.mode == 'hold' and UiPromptHasHoldModeCompleted(v.handle)
+        or UiPromptHasStandardModeCompleted(v.handle, 0)
+    if completed then v.completedAt = now end
 
-    return ToolkitResults.Ok({ completed = completed == true })
+    return ToolkitResults.Ok({ completed = completed and true or false })
 end
 
 function ToolkitPrompts.SetEnabled(owner, id, enabled)
@@ -57,8 +60,8 @@ function ToolkitPrompts.SetEnabled(owner, id, enabled)
         return ToolkitResults.Err('forbidden', 'Prompt belongs to another resource.')
     end
 
-    PromptSetEnabled(v.handle, enabled == true)
-    PromptSetVisible(v.handle, enabled == true)
+    UiPromptSetEnabled(v.handle, enabled == true and 1 or 0)
+    UiPromptSetVisible(v.handle, enabled == true and 1 or 0)
 
     return ToolkitResults.Ok({ enabled = enabled == true })
 end
@@ -73,7 +76,7 @@ function ToolkitPrompts.Remove(owner, id)
         return ToolkitResults.Err('forbidden', 'Prompt belongs to another resource.')
     end
 
-    Citizen.InvokeNative(0x00EDE88D4D13CF59, v.handle)
+    UiPromptDelete(v.handle)
     ToolkitPrompts.records[id] = nil
 
     return ToolkitResults.Ok({ removed = true, id = id })
@@ -83,12 +86,22 @@ function ToolkitPrompts.Cleanup(owner)
     local n = 0
     for id, v in pairs(ToolkitPrompts.records) do
         if v.owner == owner then
-            Citizen.InvokeNative(0x00EDE88D4D13CF59, v.handle)
+            UiPromptDelete(v.handle)
             ToolkitPrompts.records[id] = nil
             n = n + 1
         end
     end
     return n
+end
+
+function ToolkitPrompts.CleanupAll()
+    local count = 0
+    for id, record in pairs(ToolkitPrompts.records) do
+        UiPromptDelete(record.handle)
+        ToolkitPrompts.records[id] = nil
+        count = count + 1
+    end
+    return count
 end
 
 exports('ShowPromptGroup', function(groupId, label)
@@ -97,7 +110,8 @@ exports('ShowPromptGroup', function(groupId, label)
         return ToolkitResults.Err('invalid_input', 'Prompt group id is required.')
     end
 
-    PromptSetActiveGroupThisFrame(groupId, CreateVarString(10, 'LITERAL_STRING', tostring(label or 'Interactions')), 1, 0)
+    UiPromptSetActiveGroupThisFrame(groupId,
+        CreateVarString(10, 'LITERAL_STRING', tostring(label or 'Interactions')), 1, 0, 0, 0)
 
     return ToolkitResults.Ok({ shown = true, groupId = groupId })
 end)

@@ -54,3 +54,13 @@ function ToolkitBlips.Cleanup(owner)
     end
     return n
 end
+
+function ToolkitBlips.CleanupAll()
+    local count = 0
+    for id, record in pairs(ToolkitBlips.records) do
+        RemoveBlip(record.handle)
+        ToolkitBlips.records[id] = nil
+        count = count + 1
+    end
+    return count
+end
