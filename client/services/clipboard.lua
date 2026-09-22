@@ -1,4 +1,5 @@
 ToolkitClipboard = {}
+
 function ToolkitClipboard.Copy(text)
     text = tostring(text or '')
     if text == '' or #text > 65536 then

@@ -1,4 +1,5 @@
 ToolkitBlips = { records = {}, nextId = 0 }
+
 function ToolkitBlips.Create(owner, spec)
     if type(spec) ~= 'table' or not tonumber(spec.x) or not tonumber(spec.y) or not tonumber(spec.z) then
         return ToolkitResults.Err('invalid_input', 'Blip specification is invalid.')
@@ -41,14 +42,17 @@ function ToolkitBlips.Remove(owner, id)
         return ToolkitResults.Err('forbidden', 'Blip belongs to another resource.')
     end
 
-    RemoveBlip(v.handle); ToolkitBlips.records[id] = nil; return ToolkitResults.Ok({ removed = true, id = id })
+    RemoveBlip(v.handle)
+    ToolkitBlips.records[id] = nil
+    return ToolkitResults.Ok({ removed = true, id = id })
 end
 
 function ToolkitBlips.Cleanup(owner)
     local n = 0
     for id, v in pairs(ToolkitBlips.records) do
         if v.owner == owner then
-            RemoveBlip(v.handle); ToolkitBlips.records[id] = nil
+            RemoveBlip(v.handle)
+            ToolkitBlips.records[id] = nil
             n = n + 1
         end
     end

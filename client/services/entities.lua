@@ -7,6 +7,7 @@ local function Track(owner, entity, kind)
 
     return ToolkitResults.Ok({ id = id, entity = entity, kind = kind })
 end
+
 function ToolkitEntities.CreateObject(owner, spec)
     if type(spec) ~= 'table' then
         return ToolkitResults.Err('invalid_input', 'Object specification is required.')
