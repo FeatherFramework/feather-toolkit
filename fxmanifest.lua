@@ -6,7 +6,7 @@ lua54 'yes'
 name 'feather-toolkit'
 description 'Owned, reusable client utility contracts for Feather Framework'
 author 'Feather Framework'
-version '0.2.1'
+version '0.3.0'
 
 shared_scripts {
     'config.lua',
@@ -25,5 +25,7 @@ server_scripts {
 ui_page 'ui/index.html'
 
 files {
-    'ui/index.html'
+    'ui/index.html',
+    'ui/app.js',
+    'ui/style.css'
 }

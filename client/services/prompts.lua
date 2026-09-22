@@ -1,24 +1,36 @@
 ToolkitPrompts = { records = {}, nextId = 0 }
 
 function ToolkitPrompts.Create(owner, spec)
-    if type(spec) ~= 'table' or not tonumber(spec.control) then
+    local control = type(spec) == 'table' and tonumber(spec.control) or nil
+    if not control or control % 1 ~= 0 then
         return ToolkitResults.Err('invalid_input', 'Prompt control is required.')
     end
 
-    local handle = UiPromptRegisterBegin()
-    UiPromptSetControlAction(handle, tonumber(spec.control))
-    UiPromptSetText(handle, CreateVarString(10, 'LITERAL_STRING', tostring(spec.label or 'Interact')))
-    UiPromptSetEnabled(handle, spec.enabled ~= false and 1 or 0)
-    UiPromptSetVisible(handle, spec.visible ~= false and 1 or 0)
+    local groupId = spec.groupId ~= nil and tonumber(spec.groupId) or nil
+    local tabIndex = spec.tabIndex ~= nil and tonumber(spec.tabIndex) or 0
+    if (spec.groupId ~= nil and (not groupId or groupId % 1 ~= 0))
+        or not tabIndex or tabIndex % 1 ~= 0 then
+        return ToolkitResults.Err('invalid_input', 'Prompt group and tab index must be integers.')
+    end
 
-    if spec.groupId then
-        UiPromptSetGroup(handle, tonumber(spec.groupId), tonumber(spec.tabIndex) or 0)
+    control = math.floor(control)
+    groupId = groupId and math.floor(groupId) or nil
+    tabIndex = math.floor(tabIndex)
+
+    local handle = UiPromptRegisterBegin()
+    UiPromptSetControlAction(handle, control)
+    UiPromptSetText(handle, CreateVarString(10, 'LITERAL_STRING', tostring(spec.label or 'Interact')))
+    UiPromptSetEnabled(handle, spec.enabled ~= false)
+    UiPromptSetVisible(handle, spec.visible ~= false)
+
+    if groupId then
+        UiPromptSetGroup(handle, groupId, tabIndex)
     end
 
     if spec.mode == 'hold' then
         UiPromptSetStandardizedHoldMode(handle, spec.holdMode or 'MEDIUM_TIMED_EVENT')
     else
-        UiPromptSetStandardMode(handle, 1)
+        UiPromptSetStandardMode(handle, true)
     end
 
     UiPromptSetUrgentPulsingEnabled(handle, spec.pulsing ~= false)
@@ -42,10 +54,15 @@ function ToolkitPrompts.Completed(owner, id)
     end
 
     local now = GetGameTimer()
-    if now - v.completedAt < 500 then return ToolkitResults.Ok({ completed = false }) end
+    if now - v.completedAt < 500 then
+        return ToolkitResults.Ok({ completed = false })
+    end
+
     local completed = v.mode == 'hold' and UiPromptHasHoldModeCompleted(v.handle)
         or UiPromptHasStandardModeCompleted(v.handle, 0)
-    if completed then v.completedAt = now end
+    if completed then
+        v.completedAt = now
+    end
 
     return ToolkitResults.Ok({ completed = completed and true or false })
 end
@@ -60,8 +77,8 @@ function ToolkitPrompts.SetEnabled(owner, id, enabled)
         return ToolkitResults.Err('forbidden', 'Prompt belongs to another resource.')
     end
 
-    UiPromptSetEnabled(v.handle, enabled == true and 1 or 0)
-    UiPromptSetVisible(v.handle, enabled == true and 1 or 0)
+    UiPromptSetEnabled(v.handle, enabled == true)
+    UiPromptSetVisible(v.handle, enabled == true)
 
     return ToolkitResults.Ok({ enabled = enabled == true })
 end

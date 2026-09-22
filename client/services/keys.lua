@@ -2,9 +2,9 @@ ToolkitKeys = { listeners = {}, nextId = 0 }
 
 local function IsCallable(value)
     return type(value) == 'function'
-        or (type(value) == 'table'
-            and type(rawget(value, '__cfx_functionReference')) == 'string')
+        or (type(value) == 'table' and type(rawget(value, '__cfx_functionReference')) == 'string')
 end
+
 function ToolkitKeys.Register(owner, control, callback, mode)
     local resolved = ToolkitControls.Resolve(control)
     if not resolved.ok or not IsCallable(callback) then
@@ -43,7 +43,8 @@ function ToolkitKeys.Remove(owner, id)
         return ToolkitResults.Err('forbidden', 'Key listener belongs to another resource.')
     end
 
-    ToolkitKeys.listeners[id] = nil; return ToolkitResults.Ok({ removed = true, id = id })
+    ToolkitKeys.listeners[id] = nil
+    return ToolkitResults.Ok({ removed = true, id = id })
 end
 
 function ToolkitKeys.Cleanup(owner)

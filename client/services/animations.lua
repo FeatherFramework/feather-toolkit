@@ -7,8 +7,7 @@ function ToolkitAnimations.LoadDictionary(dictionary, timeoutMs)
 
     timeoutMs = tonumber(timeoutMs) or Config.AnimDictTimeoutMs
     if timeoutMs < 1 or timeoutMs > 60000 then
-        return ToolkitResults.Err('invalid_input',
-            'Animation dictionary timeout must be between 1 and 60000 milliseconds.')
+        return ToolkitResults.Err('invalid_input', 'Animation dictionary timeout must be between 1 and 60000 milliseconds.')
     end
 
     if HasAnimDictLoaded(dictionary) then
